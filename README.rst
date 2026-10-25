@@ -1,99 +1,63 @@
-pymodaq_plugins_template
+pymodaq_plugins_slmsuite
 ########################
 
-.. the following must be adapted to your developed package, links to pypi, github  description...
-
-.. image:: https://img.shields.io/pypi/v/pymodaq_plugins_template.svg
-   :target: https://pypi.org/project/pymodaq_plugins_template/
+.. image:: https://img.shields.io/pypi/v/pymodaq_plugins_slmsuite.svg
+   :target: https://pypi.org/project/pymodaq_plugins_slmsuite/
    :alt: Latest Version
 
-.. image:: https://readthedocs.org/projects/pymodaq/badge/?version=latest
-   :target: https://pymodaq.readthedocs.io/en/stable/?badge=latest
-   :alt: Documentation Status
-
-.. image:: https://github.com/PyMoDAQ/pymodaq_plugins_template/workflows/Upload%20Python%20Package/badge.svg
-   :target: https://github.com/PyMoDAQ/pymodaq_plugins_template
+.. image:: https://github.com/PyMoDAQ/pymodaq_plugins_slmsuite/workflows/Upload%20Python%20Package/badge.svg
+   :target: https://github.com/PyMoDAQ/pymodaq_plugins_slmsuite
    :alt: Publication Status
 
-.. image:: https://github.com/PyMoDAQ/pymodaq_plugins_template/actions/workflows/Test.yml/badge.svg
-    :target: https://github.com/PyMoDAQ/pymodaq_plugins_template/actions/workflows/Test.yml
+PyMoDAQ plugin giving access to the spatial light modulators (SLM) supported by
+`slmsuite <https://github.com/slmsuite/slmsuite>`_ (Holoeye, Meadowlark, Santec, Hamamatsu, mirrored screens, ...).
+It is meant to be used with the BeamShaping extension of
+`pymodaq_plugins_beam_shaping <https://github.com/PyMoDAQ/pymodaq_plugins_beam_shaping>`_, but any Dashboard can use
+the actuators.
 
-
-Use this template to create a repository on your account and start the development of your own PyMoDAQ plugin!
-
-This branch targets **PyMoDAQ 5.3.x** (Python 3.10 to 3.13). Use the branch matching your PyMoDAQ version.
-
-Development
-===========
-
-* Install your plugin in editable mode: ``pip install -e .``
-* Check it, without any hardware: ``check_plugin`` (and ``pytest``)
-* If you use an AI coding assistant, point it to ``AGENTS.md``: it describes the patterns to follow for instrument
-  plugins, Dashboard extensions (``CustomExt``, whenever instruments are involved) and standalone apps
-  (``CustomApp``, only if no instruments are needed).
-
+This branch targets **PyMoDAQ 5.3.x** (Python 3.10 to 3.13).
 
 Authors
 =======
 
-* First Author  (myemail@xxx.org)
-* Other author (myotheremail@xxx.org)
-
-.. if needed use this field
-
-    Contributors
-    ============
-
-    * First Contributor
-    * Other Contributors
-
-.. if needed use this field
-
-  Depending on the plugin type, delete/complete the fields below
+* Sebastien J. Weber  (sebastien.weber@cemes.fr)
 
 
 Instruments
 ===========
 
-Below is the list of instruments included in this plugin
-
 Actuators
 +++++++++
 
-* **yyy**: control of yyy actuators
-* **xxx**: control of xxx actuators
+All the actuators have the same interface: the target is a 2D array of the shape of the SLM (or a single value spread
+over the SLM). It is displayed as a **phase in radians**, converted to grey levels by slmsuite (wrapping, look-up table,
+wavefront correction if one was loaded), or as **raw grey levels** if the ``Input as grey levels`` setting is checked or
+if the data carries the attribute ``as_grey_levels=True`` (as ``DataShaper`` of BeamShaping does). This is also the
+interface of the Holoeye plugin and of the mock *Shaper* of BeamShaping.
 
-Viewer0D
-++++++++
+* **Slmsuite**: generic, choose the slmsuite class (``SLM type``) and give its constructor arguments as a Python
+  dictionary (``Arguments``)
+* **SlmsuiteSimulated**: simulated SLM of slmsuite, no hardware needed
+* **SlmsuiteMeadowlark**: Meadowlark SLM (Windows only, Blink SDK)
+* **SlmsuiteHoloeye**: Holoeye SLM (SLM Display SDK)
 
-* **yyy**: control of yyy 0D detector
-* **xxx**: control of xxx 0D detector
+Another SLM supported by slmsuite with specific settings can be added by subclassing
+``pymodaq_plugins_slmsuite.resources.daq_move_SlmsuiteBase.DAQ_Move_SlmsuiteBase``.
 
-Viewer1D
-++++++++
+The working wavelength (``Wavelength (nm)`` setting, default in the configuration file of the plugin) is given to
+slmsuite to convert phases into grey levels.
 
-* **yyy**: control of yyy 1D detector
-* **xxx**: control of xxx 1D detector
+Status
+++++++
 
-
-Viewer2D
-++++++++
-
-* **yyy**: control of yyy 2D detector
-* **xxx**: control of xxx 2D detector
-
-
-PID Models
-==========
-
-
-Extensions
-==========
+Tested against the simulated SLM of slmsuite only (``pytest``). The Meadowlark and Holoeye actuators have not been
+validated on real devices yet.
 
 
 Installation instructions
 =========================
 
-* PyMoDAQ’s version.
-* Operating system’s version.
-* What manufacturer’s drivers should be installed to make this plugin run?
+* PyMoDAQ 5.3.x, slmsuite >= 0.5.0 (installed with this plugin)
+* The vendor SDK of your SLM has to be installed separately, see the
+  `slmsuite documentation <https://slmsuite.readthedocs.io/>`_ for each manufacturer.
+* Development: ``pip install -e .``, then ``check_plugin`` and ``pytest`` (needs ``pytest-qt``)

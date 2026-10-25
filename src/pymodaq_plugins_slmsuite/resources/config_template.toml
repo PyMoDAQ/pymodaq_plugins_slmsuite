@@ -1,0 +1,4 @@
+title = 'configuration file of the pymodaq_plugins_slmsuite plugin'
+
+[slm]
+wavelength_nm = 515  # working wavelength, given to slmsuite (wav_um) to convert phases (rad) into grey levels
