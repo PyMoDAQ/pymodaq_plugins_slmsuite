@@ -26,6 +26,8 @@ maintainers = [
     {name = "Weber Sébastien", email = "sebastien.weber@cemes.fr"},
 ]
 
+optional-dependencies = {beamshaping = ["pymodaq_plugins_beam_shaping>=5.0.0"]}
+
 # nottodo: leave everything below as is!
 
 dynamic = ["version", "urls", "entry-points", "classifiers"]

@@ -54,6 +54,16 @@ Tested against the simulated SLM of slmsuite only (``pytest``). The Meadowlark a
 validated on real devices yet.
 
 
+BeamShaping algorithm
+=====================
+
+With ``pip install pymodaq_plugins_slmsuite[beamshaping]`` the ``slmsuite Hologram`` algorithm is added to the
+BeamShaping extension of ``pymodaq_plugins_beam_shaping`` (found through the ``pymodaq_plugins_beam_shaping.algorithms``
+entry point). It computes the phase mask with ``slmsuite.holography.algorithms.Hologram``, with the methods GS,
+WGS-Leonardo, WGS-Kim, WGS-Nogrette, WGS-Wu and WGS-tanh. The GPU is used if ``cupy`` is installed.
+The conjugate gradient method is not exposed yet.
+
+
 Installation instructions
 =========================
 
