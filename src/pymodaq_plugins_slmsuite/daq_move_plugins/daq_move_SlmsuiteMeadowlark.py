@@ -8,13 +8,16 @@ class DAQ_Move_SlmsuiteMeadowlark(DAQ_Move_SlmsuiteBase):
 
     The Blink SDK of Meadowlark has to be installed (see the slmsuite documentation, the SDK is Windows only).
 
+    The connection (HDMI or PCIe) is detected by slmsuite from the installed SDK, set the SDK path if several
+    SDKs are installed (by default the most recent one is used).
+
     Not tested yet on a real device.
     """
     slm_type = 'Meadowlark'
     supported_platforms = ('win32',)  # the Blink SDK driven by slmsuite is a Windows DLL
     params = ([
         {'title': 'Board number:', 'name': 'slm_number', 'type': 'int', 'value': 1, 'min': 1,
-         'tip': 'Board number of the SLM, in case of several PCIe SLMs'},
+         'tip': 'Board number of the SLM, in case of several PCIe SLMs. Ignored for HDMI SLMs'},
         {'title': 'SDK path:', 'name': 'sdk_path', 'type': 'browsepath', 'value': '', 'filetype': False,
          'tip': 'Folder of the Blink SDK installation. Leave empty to use the default of slmsuite'},
         {'title': 'LUT file:', 'name': 'lut_path', 'type': 'browsepath', 'value': '', 'filetype': True,
