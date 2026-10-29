@@ -65,13 +65,16 @@ class TestParseKwargs:
             parse_kwargs('[1, 2]')
 
 
+def _geometry(plugin):
+    group = plugin.settings.child('shaper_geometry')
+    return [group[name] for name in ('width', 'height', 'pixel_size_x', 'pixel_size_y')]
+
+
 class TestShaperGeometry:
     def test_simulated(self, slm):
-        geometry = slm.get_shaper_geometry()
-        assert (geometry.width, geometry.height) == (WIDTH, HEIGHT)
-        assert geometry.shape == (HEIGHT, WIDTH)
-        assert geometry.pixel_size_x > 0 and geometry.pixel_size_y > 0
-        assert slm.settings['info', 'pixel_size_x'] == geometry.pixel_size_x
+        width, height, size_x, size_y = _geometry(slm)
+        assert (width, height) == (WIDTH, HEIGHT)
+        assert size_x > 0 and size_y > 0
 
     def test_pitch_from_slmsuite(self):
         controller = SlmController('SimulatedSLM', resolution=(WIDTH, HEIGHT), pitch_um=(5., 6.))
@@ -85,8 +88,7 @@ class TestShaperGeometry:
 
     def test_fake_controller(self, qapp, fake_controller):
         plugin = make_actuator(DAQ_Move_SlmsuiteMeadowlark)
-        geometry = plugin.get_shaper_geometry()
-        assert (geometry.width, geometry.height, geometry.pixel_size) == (6, 4, (8., 9.))
+        assert _geometry(plugin) == [6, 4, 8., 9.]
         plugin.close()
 
 
