@@ -65,6 +65,31 @@ class TestParseKwargs:
             parse_kwargs('[1, 2]')
 
 
+class TestShaperGeometry:
+    def test_simulated(self, slm):
+        geometry = slm.get_shaper_geometry()
+        assert (geometry.width, geometry.height) == (WIDTH, HEIGHT)
+        assert geometry.shape == (HEIGHT, WIDTH)
+        assert geometry.pixel_size_x > 0 and geometry.pixel_size_y > 0
+        assert slm.settings['info', 'pixel_size_x'] == geometry.pixel_size_x
+
+    def test_pitch_from_slmsuite(self):
+        controller = SlmController('SimulatedSLM', resolution=(WIDTH, HEIGHT), pitch_um=(5., 6.))
+        assert controller.pitch_um == (5., 6.)
+        controller.close()
+
+    def test_pitch_given_once(self):
+        controller = SlmController('SimulatedSLM', resolution=(WIDTH, HEIGHT), pitch_um=7.)
+        assert controller.pitch_um == (7., 7.)
+        controller.close()
+
+    def test_fake_controller(self, qapp, fake_controller):
+        plugin = make_actuator(DAQ_Move_SlmsuiteMeadowlark)
+        geometry = plugin.get_shaper_geometry()
+        assert (geometry.width, geometry.height, geometry.pixel_size) == (6, 4, (8., 9.))
+        plugin.close()
+
+
 class TestSimulatedActuator:
     def test_infos(self, slm):
         assert slm.settings['info', 'width'] == WIDTH
@@ -127,6 +152,7 @@ class FakeController:
     def __init__(self, slm_type, **kwargs):
         self.slm_type, self.kwargs = slm_type, kwargs
         self.shape = (4, 6)
+        self.pitch_um = (8., 9.)
         self.bitresolution = 256
         FakeController.instances.append(self)
 

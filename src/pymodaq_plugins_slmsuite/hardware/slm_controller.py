@@ -50,6 +50,12 @@ class SlmController:
         return tuple(int(s) for s in self.slm.shape)
 
     @property
+    def pitch_um(self) -> tuple[float, float]:
+        """The size (x, y) of the pixels in micrometer, as known by slmsuite (the driver when it can tell, else 8 um)"""
+        pitch = np.broadcast_to(np.asarray(self.slm.pitch_um, dtype=float), (2,))
+        return float(pitch[0]), float(pitch[1])
+
+    @property
     def bitresolution(self) -> int:
         """The number of grey levels of the SLM"""
         return int(self.slm.bitresolution)

@@ -1,4 +1,5 @@
 import ast
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -12,10 +13,16 @@ from pymodaq_utils.logger import set_logger, get_module_name
 from pymodaq_plugins_slmsuite import config
 from pymodaq_plugins_slmsuite.hardware.slm_controller import SlmController
 
+try:
+    from pymodaq_plugins_beam_shaping.utilities.shaper import ShaperInterface, ShaperGeometry
+except ImportError:  # BeamShaping is optional: the plugin provides the same information without the base class
+    ShaperInterface = object
+    ShaperGeometry = None
+
 logger = set_logger(get_module_name(__file__))
 
 
-class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
+class DAQ_Move_SlmsuiteBase(ShaperInterface, DAQ_Move_base):
     """Base class of the actuators driving a spatial light modulator (SLM) through slmsuite
 
     The target of a move is a 2D array (``DataActuator`` with one 2D array, or one value that is spread over the whole
@@ -41,6 +48,8 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
         {'title': 'SLM Infos:', 'name': 'info', 'type': 'group', 'children': [
             {'title': 'Width:', 'name': 'width', 'type': 'int', 'value': 0, 'readonly': True},
             {'title': 'Height:', 'name': 'height', 'type': 'int', 'value': 0, 'readonly': True},
+            {'title': 'Pixel size x (um):', 'name': 'pixel_size_x', 'type': 'float', 'value': 0., 'readonly': True},
+            {'title': 'Pixel size y (um):', 'name': 'pixel_size_y', 'type': 'float', 'value': 0., 'readonly': True},
             {'title': 'Grey levels:', 'name': 'levels', 'type': 'int', 'value': 0, 'readonly': True},
         ]},
         {'title': 'Wavelength (nm):', 'name': 'wavelength_nm', 'type': 'float',
@@ -74,10 +83,22 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
         height, width = self.controller.shape
         self.settings.child('info', 'width').setValue(width)
         self.settings.child('info', 'height').setValue(height)
+        pixel_size_x, pixel_size_y = self.controller.pitch_um
+        self.settings.child('info', 'pixel_size_x').setValue(pixel_size_x)
+        self.settings.child('info', 'pixel_size_y').setValue(pixel_size_y)
         self.settings.child('info', 'levels').setValue(self.controller.bitresolution)
 
         self.current_value = DataActuator(self._title, data=[np.zeros(self.controller.shape)])
         return f'{self.get_slm_type()} SLM {width}x{height} pixels', True
+
+    def get_shaper_geometry(self):
+        """Number of pixels and pixel size (um) from slmsuite, see ShaperInterface of the BeamShaping extension"""
+        height, width = self.controller.shape
+        size_x, size_y = self.controller.pitch_um
+        if ShaperGeometry is None:
+            return SimpleNamespace(width=width, height=height, shape=(height, width),
+                                   pixel_size_x=size_x, pixel_size_y=size_y, pixel_size=(size_x, size_y))
+        return ShaperGeometry(width, height, size_x, size_y)
 
     def close(self):
         if self.is_master and self.controller is not None:
