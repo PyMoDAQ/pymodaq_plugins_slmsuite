@@ -4,10 +4,17 @@ All the plugins of this package talk to an :class:`SlmController` instead of the
 tested with a fake controller and so that the vendor specific imports (SDKs that are often available on one platform
 only) stay lazy.
 """
+import inspect
+from contextlib import contextmanager
+from functools import wraps
 from importlib import import_module
 from typing import Any
 
+from pymodaq_utils.logger import set_logger, get_module_name
+
 import numpy as np
+
+logger = set_logger(get_module_name(__file__))
 
 # name shown in the plugin -> (module, class) in slmsuite.hardware.slms
 SLM_CLASSES: dict[str, tuple[str, str]] = {
@@ -29,6 +36,39 @@ def get_slm_class(slm_type: str) -> type:
     return getattr(import_module(module_name), class_name)
 
 
+@contextmanager
+def holoeye_without_preview():
+    """Open the Holoeye SLM without the SDK preview window
+
+    slmsuite calls ``HEDS.SLM.Init(preselect=...)`` and the SDK opens by default a preview window (which needs a GUI
+    thread and may ask for authorizations, making the initialization fail when done from a PyMoDAQ module thread). When
+    the ``Init`` function of the installed SDK has an ``openPreview`` argument, it is set to False during the opening.
+    """
+    heds = getattr(import_module('slmsuite.hardware.slms.holoeye'), 'HEDS', None)
+    slm_class = getattr(heds, 'SLM', None)
+    init = getattr(slm_class, 'Init', None)
+    try:
+        has_option = init is not None and 'openPreview' in inspect.signature(init).parameters
+    except (TypeError, ValueError):  # no signature available for this callable
+        has_option = False
+    if not has_option:
+        logger.warning('The Holoeye SDK has no openPreview option in SLM.Init (or it cannot be inspected): '
+                       'the preview window cannot be disabled')
+        yield
+        return
+
+    @wraps(init)
+    def init_without_preview(*args, **kwargs):
+        kwargs.setdefault('openPreview', False)
+        return init(*args, **kwargs)
+
+    slm_class.Init = staticmethod(init_without_preview)
+    try:
+        yield
+    finally:
+        slm_class.Init = staticmethod(init)
+
+
 class SlmController:
     """Open one slmsuite SLM and send phase or grey level images to it
 
@@ -37,12 +77,19 @@ class SlmController:
     slm_type: str
         One of the keys of ``SLM_CLASSES``
     **kwargs:
-        Passed to the constructor of the slmsuite class (``wav_um``, ``pitch_um``, ``resolution``, ...)
+        Passed to the constructor of the slmsuite class (``wav_um``, ``pitch_um``, ``resolution``, ...), except
+        ``preview`` (Holoeye only, default False): whether the SDK preview window is opened.
     """
 
     def __init__(self, slm_type: str, **kwargs: Any):
         self.slm_type = slm_type
-        self.slm = get_slm_class(slm_type)(**kwargs)
+        slm_class = get_slm_class(slm_type)
+        preview = kwargs.pop('preview', False)
+        if slm_type == 'Holoeye' and not preview:
+            with holoeye_without_preview():
+                self.slm = slm_class(**kwargs)
+        else:
+            self.slm = slm_class(**kwargs)
 
     @property
     def shape(self) -> tuple[int, int]:

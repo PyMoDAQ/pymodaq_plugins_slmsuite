@@ -15,6 +15,9 @@ class DAQ_Move_SlmsuiteHoloeye(DAQ_Move_SlmsuiteBase):
     params = ([
         {'title': 'Preselect:', 'name': 'preselect', 'type': 'str', 'value': 'index:0',
          'tip': 'Holoeye selection string, for instance index:0, name:pluto;serial:0001 or serial:2220-0011'},
+        {'title': 'Show preview window:', 'name': 'preview', 'type': 'bool', 'value': False,
+         'tip': 'Let the Holoeye SDK open its preview window. It needs a GUI thread and may ask for authorizations, '
+                'making the initialization fail: keep it unchecked unless needed. Needs a re-initialization.'},
     ] + DAQ_Move_SlmsuiteBase.common_slm_params +
         comon_parameters_fun(DAQ_Move_SlmsuiteBase.is_multiaxes, DAQ_Move_SlmsuiteBase._axis_names,
                              epsilon=DAQ_Move_SlmsuiteBase._epsilons))
@@ -22,6 +25,7 @@ class DAQ_Move_SlmsuiteHoloeye(DAQ_Move_SlmsuiteBase):
     def get_slm_kwargs(self) -> dict:
         kwargs = super().get_slm_kwargs()
         kwargs['preselect'] = self.settings['preselect']
+        kwargs['preview'] = self.settings['preview']
         return kwargs
 
 
