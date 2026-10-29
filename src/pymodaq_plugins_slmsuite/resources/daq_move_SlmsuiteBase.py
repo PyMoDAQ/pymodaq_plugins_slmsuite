@@ -9,20 +9,12 @@ from pymodaq_gui.parameter import Parameter
 from pymodaq_utils.utils import ThreadCommand
 from pymodaq_utils.logger import set_logger, get_module_name
 
+from pymodaq_plugins_utils.hardware.shaper import ModulatorType, shaper_params, fill_shaper_settings
+
 from pymodaq_plugins_slmsuite import config
 from pymodaq_plugins_slmsuite.hardware.slm_controller import SlmController
 
 logger = set_logger(get_module_name(__file__))
-
-
-# Read by the BeamShaping extension (group name and children names are the contract, see
-# pymodaq_plugins_beam_shaping.utilities.shaper.shaper_geometry_params), sizes in micrometer
-SHAPER_GEOMETRY = {'title': 'Shaper geometry:', 'name': 'shaper_geometry', 'type': 'group', 'children': [
-    {'title': 'Width (pixels):', 'name': 'width', 'type': 'int', 'value': 0, 'readonly': True},
-    {'title': 'Height (pixels):', 'name': 'height', 'type': 'int', 'value': 0, 'readonly': True},
-    {'title': 'Pixel size x (um):', 'name': 'pixel_size_x', 'type': 'float', 'value': 0., 'readonly': True},
-    {'title': 'Pixel size y (um):', 'name': 'pixel_size_y', 'type': 'float', 'value': 0., 'readonly': True},
-]}
 
 
 class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
@@ -60,8 +52,7 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
          'tip': 'Add the wavefront correction loaded in slmsuite (if any) to the displayed phases'},
         {'title': 'Input as grey levels:', 'name': 'input_as_grey_levels', 'type': 'bool', 'value': False,
          'tip': 'Interpret the received arrays as grey levels instead of phases in radians'},
-        SHAPER_GEOMETRY,
-    ]
+    ] + shaper_params()
     params = common_slm_params + comon_parameters_fun(is_multiaxes, _axis_names, epsilon=_epsilons)
 
     def ini_attributes(self):
@@ -85,10 +76,9 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
         height, width = self.controller.shape
         self.settings.child('info', 'width').setValue(width)
         self.settings.child('info', 'height').setValue(height)
-        geometry = self.settings.child('shaper_geometry')
-        for name, value in zip(('width', 'height', 'pixel_size_x', 'pixel_size_y'), (width, height,
-                                                                                    *self.controller.pitch_um)):
-            geometry.child(name).setValue(value)
+        fill_shaper_settings(self.settings, self.get_slm_type(), width, height, *self.controller.pitch_um,
+                             modulator_type=ModulatorType.PHASE,
+                             has_internal_calibration=self.controller.has_internal_calibration)
         self.settings.child('info', 'levels').setValue(self.controller.bitresolution)
 
         self.current_value = DataActuator(self._title, data=[np.zeros(self.controller.shape)])

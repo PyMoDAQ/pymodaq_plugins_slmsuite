@@ -70,6 +70,11 @@ def _geometry(plugin):
     return [group[name] for name in ('width', 'height', 'pixel_size_x', 'pixel_size_y')]
 
 
+def _properties(plugin):
+    group = plugin.settings.child('shaper_properties')
+    return [group[name] for name in ('name', 'has_internal_calibration', 'use_internal_calibration')]
+
+
 class TestShaperGeometry:
     def test_simulated(self, slm):
         width, height, size_x, size_y = _geometry(slm)
@@ -89,7 +94,18 @@ class TestShaperGeometry:
     def test_fake_controller(self, qapp, fake_controller):
         plugin = make_actuator(DAQ_Move_SlmsuiteMeadowlark)
         assert _geometry(plugin) == [6, 4, 8., 9.]
+        assert _properties(plugin) == ['Meadowlark', True, True]
         plugin.close()
+
+    def test_no_internal_calibration_by_default(self, slm):
+        assert _properties(slm) == ['SimulatedSLM', False, False]
+
+    def test_lut_is_an_internal_calibration(self):
+        controller = SlmController('SimulatedSLM', resolution=(WIDTH, HEIGHT))
+        assert not controller.has_internal_calibration
+        controller.slm.lut = np.arange(256)
+        assert controller.has_internal_calibration
+        controller.close()
 
 
 class TestSimulatedActuator:
@@ -155,6 +171,7 @@ class FakeController:
         self.slm_type, self.kwargs = slm_type, kwargs
         self.shape = (4, 6)
         self.pitch_um = (8., 9.)
+        self.has_internal_calibration = slm_type == 'Meadowlark'
         self.bitresolution = 256
         FakeController.instances.append(self)
 
