@@ -47,7 +47,8 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
         ]},
         {'title': 'Wavelength (nm):', 'name': 'wavelength_nm', 'type': 'float',
          'value': config('slm', 'wavelength_nm'), 'min': 1.,
-         'tip': 'Working wavelength, used by slmsuite to convert phases into grey levels. Needs a re-initialization.'},
+         'tip': 'Working wavelength, used by slmsuite to convert phases into grey levels. Imposed by the BeamShaping '
+                'extension (setup preference) when it is loaded. A change is applied directly to the open SLM.'},
         {'title': 'Apply phase correction:', 'name': 'phase_correct', 'type': 'bool', 'value': True,
          'tip': 'Add the wavefront correction loaded in slmsuite (if any) to the displayed phases'},
         {'title': 'Input as grey levels:', 'name': 'input_as_grey_levels', 'type': 'bool', 'value': False,
@@ -89,7 +90,8 @@ class DAQ_Move_SlmsuiteBase(DAQ_Move_base):
             self.controller.close()
 
     def commit_settings(self, param: Parameter):
-        pass
+        if param.name() == 'wavelength_nm' and self.controller is not None and self.is_master:
+            self.controller.set_wavelength(param.value() / 1000)
 
     def get_actuator_value(self) -> DataActuator:
         """The phase (radians) that the SLM displays"""
