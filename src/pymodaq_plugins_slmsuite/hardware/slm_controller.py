@@ -127,5 +127,19 @@ class SlmController:
         phase = self.slm.phase
         return np.asarray(phase.get() if hasattr(phase, 'get') else phase)
 
+    def set_wavelength(self, wav_um: float):
+        """Change the working wavelength of the open SLM (microns)
+
+        slmsuite reads ``wav_um`` each time it converts a phase into grey levels. The design wavelength follows it if
+        it was the same (default of slmsuite), keeping ``phase_scaling`` at 1. The Holoeye SDK also has to know it.
+        """
+        old = self.slm.wav_um
+        if self.slm.wav_design_um == old:
+            self.slm.wav_design_um = float(wav_um)
+        self.slm.wav_um = float(wav_um)
+        slm_lib = getattr(self.slm, 'slm_lib', None)
+        if self.slm_type == 'Holoeye' and slm_lib is not None:
+            self.slm._handle_error(slm_lib.setWavelength(wav_um * 1000))
+
     def close(self):
         self.slm.close()

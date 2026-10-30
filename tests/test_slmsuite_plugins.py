@@ -255,3 +255,33 @@ def test_holoeye_preview_can_be_enabled(monkeypatch):
 def test_holoeye_sdk_without_preview_option(monkeypatch):
     _open_holoeye(monkeypatch, FakeHEDSWithoutOption)
     assert FakeHEDSWithoutOption.SLM.calls == [('index:0',)]
+
+
+class TestWavelengthUpdate:
+    def test_changed_after_the_init(self, slm):
+        param = slm.settings.child('wavelength_nm')
+        param.setValue(800.)
+        slm.commit_settings(param)  # called by the DAQ_Move when a setting changes
+        slm_object = slm.controller.slm
+        assert slm_object.wav_um == pytest.approx(0.8)
+        assert slm_object.phase_scaling == 1  # design wavelength follows the working one
+
+        # the phase is converted with the new wavelength, without re-initialization
+        slm.controller.show_phase(np.full((HEIGHT, WIDTH), 1.))
+        assert slm.initialized
+
+    def test_design_wavelength_chosen_by_the_user_is_kept(self):
+        controller = SlmController('SimulatedSLM', resolution=(WIDTH, HEIGHT), wav_um=0.5, wav_design_um=1.)
+        controller.set_wavelength(0.8)
+        assert (controller.slm.wav_um, controller.slm.wav_design_um) == (0.8, 1.)
+        controller.close()
+
+    def test_holoeye_sdk_is_told(self):
+        calls = []
+        slm_object = SimpleNamespace(wav_um=0.5, wav_design_um=0.5, _handle_error=calls.append,
+                                     slm_lib=SimpleNamespace(setWavelength=lambda nm: calls.append(nm) or 0))
+        controller = SlmController.__new__(SlmController)
+        controller.slm_type, controller.slm = 'Holoeye', slm_object
+        controller.set_wavelength(0.8)
+        assert calls == [800., 0]
+        assert slm_object.wav_um == 0.8
