@@ -97,6 +97,18 @@ class SlmController:
         return tuple(int(s) for s in self.slm.shape)
 
     @property
+    def pitch_um(self) -> tuple[float, float]:
+        """The size (x, y) of the pixels in micrometer, as known by slmsuite (the driver when it can tell, else 8 um)"""
+        pitch = np.broadcast_to(np.asarray(self.slm.pitch_um, dtype=float), (2,))
+        return float(pitch[0]), float(pitch[1])
+
+    @property
+    def has_internal_calibration(self) -> bool:
+        """True if the SLM converts a phase to grey levels with a calibration of its own: a lookup table known by
+        slmsuite, or the one the Meadowlark SDK loads from the hardware"""
+        return self.slm_type == 'Meadowlark' or getattr(self.slm, 'lut', None) is not None
+
+    @property
     def bitresolution(self) -> int:
         """The number of grey levels of the SLM"""
         return int(self.slm.bitresolution)
