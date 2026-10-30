@@ -50,8 +50,8 @@ slmsuite to convert phases into grey levels.
 Status
 ++++++
 
-Tested against the simulated SLM of slmsuite only (``pytest``). The Meadowlark and Holoeye actuators have not been
-validated on real devices yet.
+The simulated SLM of slmsuite is tested automatically (``pytest``). The Meadowlark and Holoeye actuators have been
+validated on real devices by the maintainer.
 
 
 BeamShaping algorithms
