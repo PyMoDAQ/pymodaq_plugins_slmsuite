@@ -3,6 +3,8 @@
 Real devices (Meadowlark, Holoeye...) are not tested here: only the arguments built for their constructor are checked,
 with a fake controller.
 """
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
@@ -155,4 +157,56 @@ def test_holoeye_arguments(qapp, fake_controller):
     controller = fake_controller.instances[-1]
     assert controller.slm_type == 'Holoeye'
     assert controller.kwargs['preselect'] == 'name:pluto'
+    assert controller.kwargs['preview'] is False
     plugin.close()
+
+
+class FakeHEDS:
+    class SDK:
+        @staticmethod
+        def Init(major, minor):
+            return 0
+
+    class SLM:
+        calls = []
+
+        @staticmethod
+        def Init(preselect='', openPreview=True):
+            FakeHEDS.SLM.calls.append((preselect, openPreview))
+            raise RuntimeError('stop after the SDK call')
+
+
+class FakeHEDSWithoutOption(FakeHEDS):
+    class SLM:
+        calls = []
+
+        @staticmethod
+        def Init(preselect=''):
+            FakeHEDSWithoutOption.SLM.calls.append((preselect,))
+            raise RuntimeError('stop after the SDK call')
+
+
+def _open_holoeye(monkeypatch, heds, **kwargs):
+    from slmsuite.hardware.slms import holoeye
+    init = heds.SLM.Init
+    monkeypatch.setattr(holoeye, 'HEDS', heds)
+    monkeypatch.setattr(holoeye, 'heds_types', SimpleNamespace(HEDSERR_NoError=0), raising=False)
+    heds.SLM.calls.clear()
+    with pytest.raises(RuntimeError, match='stop after'):
+        slm_controller.SlmController('Holoeye', preselect='index:0', **kwargs)
+    assert heds.SLM.Init is init  # restored
+
+
+def test_holoeye_preview_disabled_by_default(monkeypatch):
+    _open_holoeye(monkeypatch, FakeHEDS)
+    assert FakeHEDS.SLM.calls == [('index:0', False)]
+
+
+def test_holoeye_preview_can_be_enabled(monkeypatch):
+    _open_holoeye(monkeypatch, FakeHEDS, preview=True)
+    assert FakeHEDS.SLM.calls == [('index:0', True)]
+
+
+def test_holoeye_sdk_without_preview_option(monkeypatch):
+    _open_holoeye(monkeypatch, FakeHEDSWithoutOption)
+    assert FakeHEDSWithoutOption.SLM.calls == [('index:0',)]
