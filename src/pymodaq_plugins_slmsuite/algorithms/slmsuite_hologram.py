@@ -51,6 +51,9 @@ class SlmsuiteHologram(AlgoBase):
     SETUP_TYPE = LensSetup.TwoF
     ITERATIVE = True
     MANUAL_LOOP = True
+    # status shown in BeamShaping (AlgoStatus of pymodaq_plugins_beam_shaping, a string so that older versions ignore it)
+    STATUS = 'tested'
+    STATUS_NOTE = 'Checked by the developer'
 
     params = [
         {'title': 'Method:', 'name': 'method', 'type': 'list', 'limits': list(METHOD_DEFAULTS), 'value': 'GS'},
